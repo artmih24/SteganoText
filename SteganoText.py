@@ -10,11 +10,11 @@ def count_letters(textlist, alphalist):
 
 def check_text_alpha(textlist, alphalist):
     if len(textlist) == count_letters(textlist, alphalist): 
-        return 1
+        return True
     else: 
-        return 0
+        return False
 
-def stegano_cipher(textlist, binary_code, rus_alpha_eng, eng_alpha_rus):
+def embed_text(textlist, binary_code, rus_alpha_eng, eng_alpha_rus):
     textlist1 = textlist
     binary_code_list = list(binary_code)
     if textlist1[len(textlist1) - 1] != "." and textlist1[len(textlist1) - 1] != "?" and textlist1[len(textlist1) - 1] != "!":
@@ -33,7 +33,33 @@ def stegano_cipher(textlist, binary_code, rus_alpha_eng, eng_alpha_rus):
                 k += 1
     return ''.join(textlist1)
 
-def try_stegano_decipher(textlist, rus_alpha_eng, eng_alpha_rus):
+def stegano_cipher(plaintext, crypttext, plaintextrusflag, plaintextengflag):
+    plaintextlist = list(plaintext)
+    crypttextlist = list(crypttext)
+    crypttextcharcodes = []
+    for i in range(len(crypttextlist)): 
+        crypttextcharcodes.append(ord(crypttextlist[i]))
+    crypttextcharcodesbin = []
+    for i in range(len(crypttextcharcodes)): 
+        crypttextcharcodesbin.append(bin(crypttextcharcodes[i]))
+    crypttextcharcodesbinstr = []
+    for i in range(len(crypttextcharcodesbin)): 
+        crypttextcharcodesbinstr.append(str(crypttextcharcodesbin[i])[2:])
+    for i in range(len(crypttextcharcodesbinstr)):
+        while len(list(crypttextcharcodesbinstr[i])) < lenbin: 
+            crypttextcharcodesbinstr[i] = "0" + crypttextcharcodesbinstr[i]
+    crypttextcharcodesbinstrall = ''.join(crypttextcharcodesbinstr)
+    if plaintextrusflag and plaintextengflag: 
+        steganotext = embed_text(plaintextlist, crypttextcharcodesbinstrall, rusalphaeng2, engalpharus2)
+    else:
+        if plaintextrusflag: 
+            steganotext = embed_text(plaintextlist, crypttextcharcodesbinstrall, rusalphaeng2, engalpharus2)
+        if plaintextengflag: 
+            steganotext = embed_text(plaintextlist, crypttextcharcodesbinstrall, engalpharus3, rusalphaeng3)
+    return steganotext
+
+def try_stegano_decipher(text, rus_alpha_eng, eng_alpha_rus):
+    textlist = list(text)
     binary_code_list = []
     for i in range(len(textlist)):
         for j in range(len(eng_alpha_rus)):
@@ -56,7 +82,8 @@ def try_stegano_decipher(textlist, rus_alpha_eng, eng_alpha_rus):
         decipher_text_list.append(chr(char_codes[i]))
     return ''.join(decipher_text_list)
 
-def try_plaintext_fix(textlist, rus_alpha_eng, eng_alpha_rus):
+def try_plaintext_fix(text, rus_alpha_eng, eng_alpha_rus):
+    textlist = list(text)
     plaintextfixlist = textlist
     for i in range(len(plaintextfixlist)):
         for j in range(len(eng_alpha_rus)):
@@ -64,22 +91,23 @@ def try_plaintext_fix(textlist, rus_alpha_eng, eng_alpha_rus):
                 plaintextfixlist[i] = rus_alpha_eng[j]
     return ''.join(plaintextfixlist)
 
-def stegano_decipher(textlist):
-    textlist1 = copy.deepcopy(textlist)
-    decrypttext1 = try_stegano_decipher(textlist, rusalphaeng2, engalpharus2)
-    plaintextfix1 = try_plaintext_fix(textlist, rusalphaeng2, engalpharus2)
+def stegano_decipher(text):
+    text1 = copy.deepcopy(text)
+    decrypttext1 = try_stegano_decipher(text, rusalphaeng2, engalpharus2)
+    plaintextfix1 = try_plaintext_fix(text, rusalphaeng2, engalpharus2)
     plaintextfixrusflag = check_text_alpha(list(plaintextfix1), rusalphaall)
     if check_text_alpha(list(plaintextfix1), rusalphaall) == check_text_alpha(list(plaintextfix1), engalphaall):
         return decrypttext1
     else:
-        if plaintextfixrusflag == 0:
-            decrypttext1 = try_stegano_decipher(textlist1, engalpharus3, rusalphaeng3)
-            plaintextfix1 = try_plaintext_fix(textlist, engalpharus3, rusalphaeng3)
+        if not plaintextfixrusflag:
+            decrypttext1 = try_stegano_decipher(text1, engalpharus3, rusalphaeng3)
+            plaintextfix1 = try_plaintext_fix(text, engalpharus3, rusalphaeng3)
             plaintextfixengflag = check_text_alpha(list(plaintextfix1), engalphaall)
-        if plaintextfixrusflag == 1 or plaintextfixengflag == 1: 
+        if plaintextfixrusflag or plaintextfixengflag: 
             return decrypttext1
 
-def plaintext_fix(textlist):
+def plaintext_fix(text):
+    textlist = list(text)
     plaintextfix1 = try_plaintext_fix(textlist, rusalphaeng2, engalpharus2)
     plaintextfixrusflag = check_text_alpha(list(plaintextfix1), rusalphaall)
     if plaintextfixrusflag == 0:
@@ -87,7 +115,8 @@ def plaintext_fix(textlist):
         plaintextfixengflag = check_text_alpha(list(plaintextfix1), engalphaall)
     if check_text_alpha(list(plaintextfix1), rusalphaall) == check_text_alpha(list(plaintextfix1), engalphaall):
         plaintextfix1 = try_plaintext_fix(textlist, rusalphaeng2, engalpharus2)
-    if plaintextfixrusflag == 1 or plaintextfixengflag == 1: return plaintextfix1
+    if plaintextfixrusflag or plaintextfixengflag: 
+        return plaintextfix1
 
 print("SteganoText\tv0.4.1 beta\t\tАвтор: @artmih24\n")
 lenbin = 14
@@ -111,37 +140,16 @@ engalpharus3 = engalpharus + engalphaadd
 rusalphaeng3 = rusalphaeng + addalphaeng
 while True:
     plaintext = input("Введите текст\n")
-    plaintextlist = list(plaintext)
-    plaintextrusflag = check_text_alpha(plaintextlist, rusalphaall)
-    plaintextengflag = check_text_alpha(plaintextlist, engalphaall)
-    if plaintextrusflag == 0 and plaintextengflag == 0:
-        decrypttext = stegano_decipher(plaintextlist)
-        plaintextfix = plaintext_fix(plaintextlist)
+    plaintextrusflag = check_text_alpha(plaintext, rusalphaall)
+    plaintextengflag = check_text_alpha(plaintext, engalphaall)
+    if not plaintextrusflag and not plaintextengflag:
+        decrypttext = stegano_decipher(plaintext)
+        plaintextfix = plaintext_fix(plaintext)
         print("\nИсходный текст без зашифрованного текста:\n", plaintextfix, sep = '')
         print("\nЗашифрованный текст:\n", decrypttext, '\n', sep = '')
     else:
         crypttext = input("\nВведите текст, который нужно зашифровать\n")
-        crypttextlist = list(crypttext)
-        crypttextcharcodes = []
-        for i in range(len(crypttextlist)): 
-            crypttextcharcodes.append(ord(crypttextlist[i]))
-        crypttextcharcodesbin = []
-        for i in range(len(crypttextcharcodes)): 
-            crypttextcharcodesbin.append(bin(crypttextcharcodes[i]))
-        crypttextcharcodesbinstr = []
-        for i in range(len(crypttextcharcodesbin)): 
-            crypttextcharcodesbinstr.append(str(crypttextcharcodesbin[i])[2:])
-        for i in range(len(crypttextcharcodesbinstr)):
-            while len(list(crypttextcharcodesbinstr[i])) < lenbin: 
-                crypttextcharcodesbinstr[i] = "0" + crypttextcharcodesbinstr[i]
-        crypttextcharcodesbinstrall = ''.join(crypttextcharcodesbinstr)
-        if plaintextrusflag == 1 and plaintextengflag == 1: 
-            steganotext = stegano_cipher(plaintextlist, crypttextcharcodesbinstrall, rusalphaeng2, engalpharus2)
-        else:
-            if plaintextrusflag == 1: 
-                steganotext = stegano_cipher(plaintextlist, crypttextcharcodesbinstrall, rusalphaeng2, engalpharus2)
-            if plaintextengflag == 1: 
-                steganotext = stegano_cipher(plaintextlist, crypttextcharcodesbinstrall, engalpharus3, rusalphaeng3)
+        steganotext = stegano_cipher(plaintext, crypttext, plaintextrusflag, plaintextengflag)
         print("\nТекст с зашифрованным текстом:\n", steganotext, '\n', sep = '')
     plaintextrusflag = 0
     plaintextengflag = 0
